@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Calculadora Políglota</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Exo+2:wght@300;600;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:       #0b0e1a;
+      --panel:    #111827;
+      --border:   #1e293b;
+      --accent:   #00d4ff;
+      --accent2:  #a855f7;
+      --green:    #22d3a5;
+      --red:      #f87171;
+      --text:     #e2e8f0;
+      --muted:    #64748b;
+      --glow:     0 0 18px rgba(0,212,255,.35);
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Exo 2', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 2rem 1rem;
+      background-image:
+        radial-gradient(ellipse at 20% 0%, rgba(0,212,255,.08) 0%, transparent 60%),
+        radial-gradient(ellipse at 80% 100%, rgba(168,85,247,.08) 0%, transparent 60%);
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 2.5rem;
+    }
+    header h1 {
+      font-size: 2.4rem;
+      font-weight: 800;
+      letter-spacing: .05em;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    header p { color: var(--muted); font-size: .9rem; margin-top: .4rem; font-family: 'Share Tech Mono', monospace; }
+
+    /* Estado de motores */
+    #estado-motores {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 2rem;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .motor-badge {
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: .35rem .9rem;
+      font-size: .8rem;
+      font-family: 'Share Tech Mono', monospace;
+    }
+    .dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--muted);
+    }
+    .dot.ok  { background: var(--green); box-shadow: 0 0 6px var(--green); }
+    .dot.fail{ background: var(--red);   box-shadow: 0 0 6px var(--red); }
+
+    /* Contenedor principal */
+    .calc-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+      width: 100%;
+      max-width: 860px;
+    }
+    @media(max-width: 640px) { .calc-grid { grid-template-columns: 1fr; } }
+
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 1.5rem;
+    }
+    .card h2 {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--accent);
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+    }
+    .card h2 .tag {
+      font-size: .7rem;
+      background: rgba(0,212,255,.1);
+      border: 1px solid rgba(0,212,255,.3);
+      border-radius: 4px;
+      padding: .1rem .4rem;
+      font-family: 'Share Tech Mono', monospace;
+    }
+
+    /* Botones de operación */
+    .ops-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: .5rem;
+      margin-bottom: 1rem;
+    }
+    .op-btn {
+      background: rgba(255,255,255,.03);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-family: 'Share Tech Mono', monospace;
+      font-size: .85rem;
+      padding: .5rem .3rem;
+      cursor: pointer;
+      transition: all .2s;
+    }
+    .op-btn:hover { border-color: var(--accent); color: var(--accent); background: rgba(0,212,255,.05); }
+    .op-btn.active { border-color: var(--accent); color: var(--accent); background: rgba(0,212,255,.12); box-shadow: var(--glow); }
+
+    /* Prolog buttons en morado */
+    .prolog-section .op-btn:hover,
+    .prolog-section .op-btn.active {
+      border-color: var(--accent2);
+      color: var(--accent2);
+      background: rgba(168,85,247,.1);
+      box-shadow: 0 0 14px rgba(168,85,247,.3);
+    }
+
+    /* Inputs */
+    .inputs-row {
+      display: flex;
+      gap: .5rem;
+      margin-bottom: 1rem;
+    }
+    input[type="number"] {
+      flex: 1;
+      background: rgba(255,255,255,.04);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 1rem;
+      padding: .55rem .8rem;
+      outline: none;
+      transition: border-color .2s;
+    }
+    input[type="number"]:focus { border-color: var(--accent); }
+
+    /* Botón calcular */
+    .calc-btn {
+      width: 100%;
+      padding: .7rem;
+      border: none;
+      border-radius: 10px;
+      background: linear-gradient(135deg, var(--accent), #0090cc);
+      color: #0b0e1a;
+      font-family: 'Exo 2', sans-serif;
+      font-weight: 700;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: opacity .2s, transform .1s;
+    }
+    .calc-btn:hover   { opacity: .9; }
+    .calc-btn:active  { transform: scale(.98); }
+    .prolog-section .calc-btn {
+      background: linear-gradient(135deg, var(--accent2), #7c3aed);
+    }
+
+    /* Resultado */
+    .result-box {
+      margin-top: 1rem;
+      background: rgba(255,255,255,.03);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1rem;
+      min-height: 70px;
+      font-family: 'Share Tech Mono', monospace;
+    }
+    .result-label { font-size: .7rem; color: var(--muted); margin-bottom: .4rem; }
+    .result-value { font-size: 1.6rem; color: var(--green); word-break: break-all; }
+    .result-motor { font-size: .72rem; color: var(--muted); margin-top: .4rem; }
+    .result-error { color: var(--red); }
+
+    /* Historial */
+    .history-card {
+      grid-column: 1 / -1;
+    }
+    #historial {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: .4rem;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+    #historial li {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: .82rem;
+      padding: .4rem .7rem;
+      background: rgba(255,255,255,.02);
+      border-left: 3px solid var(--border);
+      border-radius: 0 6px 6px 0;
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+    #historial li .h-motor { color: var(--muted); font-size: .74rem; }
+    #historial li .h-result { color: var(--green); }
+    #historial:empty::after {
+      content: "Sin operaciones aún...";
+      color: var(--muted);
+      font-size: .85rem;
+      font-family: 'Share Tech Mono', monospace;
+      padding: .5rem;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>⚡ Calculadora Políglota</h1>
+  <p>Python · Common Lisp · Prolog</p>
+</header>
+
+<!-- Estado de motores -->
+<div id="estado-motores">
+  <div class="motor-badge"><span class="dot ok" id="dot-python"></span>Python (Flask)</div>
+  <div class="motor-badge"><span class="dot" id="dot-lisp"></span>Common Lisp (SBCL)</div>
+  <div class="motor-badge"><span class="dot" id="dot-prolog"></span>Prolog (SWI-Prolog)</div>
+</div>
+
+<div class="calc-grid">
+
+  <!-- ── Sección Common Lisp ── -->
+  <div class="card">
+    <h2>🔢 Cálculo Matemático <span class="tag">Common Lisp</span></h2>
+    <div class="ops-grid" id="ops-lisp">
+      <button class="op-btn active" data-op="suma"           data-args="2">＋  Suma</button>
+      <button class="op-btn"       data-op="resta"          data-args="2">－  Resta</button>
+      <button class="op-btn"       data-op="multiplicacion" data-args="2">✕  Mult.</button>
+      <button class="op-btn"       data-op="division"       data-args="2">÷  División</button>
+      <button class="op-btn"       data-op="potencia"       data-args="2">xⁿ  Potencia</button>
+      <button class="op-btn"       data-op="raiz"           data-args="1">√  Raíz</button>
+      <button class="op-btn"       data-op="log"            data-args="1">ln  Logaritmo</button>
+    </div>
+    <div class="inputs-row">
+      <input type="number" id="lisp-a" placeholder="a" step="any" value="0"/>
+      <input type="number" id="lisp-b" placeholder="b" step="any" value="0"/>
+    </div>
+    <button class="calc-btn" onclick="calcular('lisp')">Calcular →</button>
+    <div class="result-box">
+      <div class="result-label">RESULTADO</div>
+      <div class="result-value" id="lisp-resultado">—</div>
+      <div class="result-motor" id="lisp-motor"></div>
+    </div>
+  </div>
+
+  <!-- ── Sección Prolog ── -->
+  <div class="card prolog-section">
+    <h2>🧠 Lógica &amp; Validación <span class="tag" style="border-color:rgba(168,85,247,.4);background:rgba(168,85,247,.1);color:var(--accent2)">Prolog</span></h2>
+    <div class="ops-grid" id="ops-prolog">
+      <button class="op-btn active" data-op="es_primo"  data-args="1">🔍 ¿Primo?</button>
+      <button class="op-btn"       data-op="es_par"    data-args="1">🔄 ¿Par?</button>
+      <button class="op-btn"       data-op="factorial" data-args="1">❗ Factorial</button>
+      <button class="op-btn"       data-op="mcd"       data-args="2">⚙️ MCD</button>
+    </div>
+    <div class="inputs-row">
+      <input type="number" id="prolog-a" placeholder="a" step="1" value="7"/>
+      <input type="number" id="prolog-b" placeholder="b (si aplica)" step="1" value="3"/>
+    </div>
+    <button class="calc-btn" onclick="calcular('prolog')">Consultar →</button>
+    <div class="result-box">
+      <div class="result-label">RESULTADO</div>
+      <div class="result-value" id="prolog-resultado">—</div>
+      <div class="result-motor" id="prolog-motor"></div>
+    </div>
+  </div>
+
+  <!-- ── Historial ── -->
+  <div class="card history-card">
+    <h2>📋 Historial de operaciones</h2>
+    <ul id="historial"></ul>
+  </div>
+
+</div><!-- end grid -->
+
+<script>
+  // ── Estado ──────────────────────────────────────────────
+  const estado = { lisp: 'suma', prolog: 'es_primo' };
+
+  // ── Selección de operación ───────────────────────────────
+  document.querySelectorAll('#ops-lisp .op-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('#ops-lisp .op-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      estado.lisp = btn.dataset.op;
+      const necesita2 = btn.dataset.args === '2';
+      document.getElementById('lisp-b').style.display = necesita2 ? '' : 'none';
+    });
+  });
+
+  document.querySelectorAll('#ops-prolog .op-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('#ops-prolog .op-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      estado.prolog = btn.dataset.op;
+      const necesita2 = btn.dataset.args === '2';
+      document.getElementById('prolog-b').style.display = necesita2 ? '' : 'none';
+    });
+  });
+
+  // Inicializar visibilidad
+  document.getElementById('prolog-b').style.display = 'none';
+
+  // ── Calcular ─────────────────────────────────────────────
+  async function calcular(seccion) {
+    const op  = estado[seccion];
+    const aEl = document.getElementById(`${seccion}-a`);
+    const bEl = document.getElementById(`${seccion}-b`);
+    const a   = parseFloat(aEl.value);
+    const b   = parseFloat(bEl.value);
+
+    const btnActivo = document.querySelector(`#ops-${seccion} .op-btn.active`);
+    const necesita2 = btnActivo?.dataset.args === '2';
+    const args = necesita2 ? [a, b] : [a];
+
+    const resEl   = document.getElementById(`${seccion}-resultado`);
+    const motorEl = document.getElementById(`${seccion}-motor`);
+    resEl.textContent = '...';
+    resEl.className   = 'result-value';
+
+    try {
+      const resp = await fetch('/calcular', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ operacion: op, args })
+      });
+      const data = await resp.json();
+
+      if (data.error) {
+        resEl.textContent = data.error;
+        resEl.classList.add('result-error');
+      } else {
+        resEl.textContent = data.resultado;
+        motorEl.textContent = `Motor: ${data.motor}`;
+        agregarHistorial(op, args, data.resultado, data.motor);
+      }
+    } catch (e) {
+      resEl.textContent = 'Error de conexión';
+      resEl.classList.add('result-error');
+    }
+  }
+
+  // ── Historial ────────────────────────────────────────────
+  function agregarHistorial(op, args, resultado, motor) {
+    const ul  = document.getElementById('historial');
+    const li  = document.createElement('li');
+    const txt = args.length > 1
+      ? `${op}(${args.join(', ')})`
+      : `${op}(${args[0]})`;
+    li.innerHTML = `
+      <span>${txt} = <span class="h-result">${resultado}</span></span>
+      <span class="h-motor">${motor}</span>`;
+    ul.prepend(li);
+    if (ul.children.length > 20) ul.removeChild(ul.lastChild);
+  }
+
+  // ── Estado de motores ────────────────────────────────────
+  async function verificarEstado() {
+    try {
+      const r = await fetch('/estado');
+      const d = await r.json();
+      document.getElementById('dot-python').className = 'dot ok';
+      document.getElementById('dot-lisp').className   = d.lisp   ? 'dot ok' : 'dot fail';
+      document.getElementById('dot-prolog').className = d.prolog ? 'dot ok' : 'dot fail';
+    } catch {}
+  }
+  verificarEstado();
+</script>
+</body>
+</html>
