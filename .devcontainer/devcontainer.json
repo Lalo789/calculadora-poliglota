@@ -1,0 +1,12 @@
+{
+  "name": "Calculadora Políglota",
+  "image": "mcr.microsoft.com/devcontainers/base:ubuntu-22.04",
+  "features": {
+    "ghcr.io/devcontainers/features/python:1": { "version": "3.11" }
+  },
+  "postCreateCommand": "bash calculadora/.devcontainer/setup.sh",
+  "forwardPorts": [5000],
+  "portsAttributes": {
+    "5000": { "label": "Calculadora Flask", "onAutoForward": "openBrowser" }
+  }
+}
